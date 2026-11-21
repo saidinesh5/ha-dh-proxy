@@ -1,0 +1,74 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Dahua / CP Plus P2P Proxy Setup",
+        "description": "Configure your NVR/Camera P2P connection. The proxy creates zero network traffic until a camera stream or snapshot is actively read.",
+        "data": {
+          "serial": "Device Serial Number (S/N)",
+          "username": "Device Username",
+          "password": "Device Password",
+          "auth_type": "Auth Type (1 = modern Type-1 auth, 0 = legacy)",
+          "app_profile": "Cloud Server Profile",
+          "relay_mode": "Transport Mode",
+          "race": "Parallel-race cloud profiles",
+          "bind_address": "Bind Address (127.0.0.1 = HA only, 0.0.0.0 = LAN)",
+          "rtsp_port": "Local RTSP Proxy Port (0 = auto)",
+          "http_port": "Local HTTP Snapshot Port (0 = auto)",
+          "inactivity_timeout": "Inactivity Disconnect Duration (seconds)",
+          "heartbeat_timeout": "Active Tunnel Heartbeat Timeout (seconds)",
+          "snapshot_cache_ttl": "In-Memory RAM Snapshot Cache Duration (seconds)",
+          "randsalt": "Explicit RandSalt (optional, auto-resolved)",
+          "debug": "Enable Debug Logging"
+        }
+      },
+      "custom_profile": {
+        "title": "Custom Cloud Server Profile",
+        "description": "Enter credentials and endpoint for a custom Dahua OEM P2P cloud server.",
+        "data": {
+          "custom_server": "Cloud Server Hostname",
+          "custom_port": "Cloud Server Port",
+          "custom_wsse_user": "WSSE Username",
+          "custom_wsse_key": "WSSE UserKey",
+          "custom_modern_dialect": "Use Modern NFGET/NFPOST Dialect",
+          "custom_to_u_type": "X-ToUType Client Header"
+        }
+      },
+      "channels": {
+        "title": "Select NVR Camera Channels",
+        "description": "{discovery_note}\nSelect which channels to add as Home Assistant Camera entities. All cameras share one multiplexed on-demand P2P connection.",
+        "data": {
+          "selected_channels": "Channels to Create",
+          "default_subtype": "Default Stream Quality",
+          "channel_names": "Camera Names (one per line: 'channel: Name')"
+        }
+      }
+    },
+    "error": {
+      "invalid_auth": "Device rejected credentials (401/403). Check username and password.",
+      "cannot_connect": "Unable to reach P2P cloud or device."
+    },
+    "abort": {
+      "already_configured": "This device serial and cloud profile are already configured."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "ha-dh-proxy Options",
+        "description": "Update proxy bind address, inactivity timeout, RAM snapshot cache interval, or add/remove/rename camera channels ('channel: Name' per line).",
+        "data": {
+          "proxy_enabled": "Enable NVR P2P Proxy",
+          "bind_address": "Bind Address (127.0.0.1 = HA only, 0.0.0.0 = LAN)",
+          "inactivity_timeout": "Inactivity Disconnect Duration (seconds)",
+          "heartbeat_timeout": "Active Tunnel Heartbeat Timeout (seconds)",
+          "snapshot_cache_ttl": "In-Memory RAM Snapshot Cache Duration (seconds)",
+          "relay_mode": "Transport Mode",
+          "default_subtype": "Default Stream Quality",
+          "channel_names": "Active Cameras ('channel: Name', one per line)",
+          "disabled_channels_csv": "Disabled Channels (comma-separated, e.g. 3, 7)"
+        }
+      }
+    }
+  }
+}

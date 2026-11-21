@@ -1,0 +1,11 @@
+{
+  "domain": "ha_dh_proxy",
+  "name": "Dahua / CP Plus P2P Proxy (ha-dh-proxy)",
+  "codeowners": [],
+  "config_flow": true,
+  "dependencies": ["http"],
+  "documentation": "https://github.com/undervolter/dh-fwd",
+  "iot_class": "cloud_polling",
+  "requirements": [],
+  "version": "1.0.0"
+}
