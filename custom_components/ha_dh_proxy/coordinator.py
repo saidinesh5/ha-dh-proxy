@@ -186,6 +186,11 @@ class AsyncP2PProxyCoordinator:
         self._last_activity: float = 0.0
         self._last_heartbeat_sent: float = 0.0
 
+        # Cumulative traffic counters (bytes)
+        self._bytes_sent: int = 0
+        self._bytes_received: int = 0
+        self._last_traffic_notify: float = 0.0
+
         # Health, offline, and error backoff state
         self._proxy_running: bool = False
         self._proxy_offline: bool = False
@@ -279,6 +284,30 @@ class AsyncP2PProxyCoordinator:
     @property
     def active_streams(self) -> int:
         return self._active_streams
+
+    @property
+    def bytes_sent(self) -> int:
+        return self._bytes_sent
+
+    @property
+    def bytes_received(self) -> int:
+        return self._bytes_received
+
+    @property
+    def bytes_transferred(self) -> int:
+        return self._bytes_sent + self._bytes_received
+
+    def _record_traffic(
+        self, sent: int = 0, received: int = 0, force_notify: bool = False
+    ) -> None:
+        if sent > 0:
+            self._bytes_sent += sent
+        if received > 0:
+            self._bytes_received += received
+        now = time.monotonic()
+        if force_notify or (now - self._last_traffic_notify) >= 2.0:
+            self._last_traffic_notify = now
+            self._notify_listeners()
 
     @property
     def last_error(self) -> str:
@@ -698,6 +727,7 @@ class AsyncP2PProxyCoordinator:
                 self._snapshot_cache[(channel, eff_sub)] = (jpeg, time.monotonic())
                 self._touch_activity()
                 self._mark_channel_online(channel)
+                self._record_traffic(received=len(jpeg), force_notify=True)
                 return jpeg
             except ProxyDisabledError:
                 raise
@@ -800,6 +830,7 @@ class AsyncP2PProxyCoordinator:
             realm_reader, realm_writer = await tunnel.async_open_realm(554)
             realm_writer.write(first_chunk)
             await realm_writer.drain()
+            self._record_traffic(sent=len(first_chunk))
 
             async def _pipe(
                 src: asyncio.StreamReader,
@@ -814,6 +845,9 @@ class AsyncP2PProxyCoordinator:
                         self._touch_activity()
                         if rewrite_rtsp:
                             chunk = self._rewrite_rtsp_chunk(chunk)
+                            self._record_traffic(sent=len(chunk))
+                        else:
+                            self._record_traffic(received=len(chunk))
                         dst.write(chunk)
                         await dst.drain()
                 except Exception:
@@ -829,6 +863,7 @@ class AsyncP2PProxyCoordinator:
                 _pipe(realm_reader, client_writer, rewrite_rtsp=False),
                 return_exceptions=True,
             )
+            self._record_traffic(force_notify=True)
         except (ProxyDisabledError, ProxyUnavailableError) as exc:
             _LOGGER.debug("ha-dh-proxy [%s] RTSP rejected: %s", self.serial, exc)
             try:

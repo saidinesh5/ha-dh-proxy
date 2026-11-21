@@ -18,7 +18,7 @@ from .coordinator import (
 )
 
 _LOGGER = logging.getLogger(__name__)
-PLATFORMS: list[Platform] = [Platform.CAMERA, Platform.SWITCH]
+PLATFORMS: list[Platform] = [Platform.CAMERA, Platform.SWITCH, Platform.SENSOR]
 _VIEW_REGISTERED_KEY = "_http_view_registered"
 
 

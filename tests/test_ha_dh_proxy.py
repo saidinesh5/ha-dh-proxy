@@ -463,6 +463,49 @@ class TestHaDhProxy(unittest.IsolatedAsyncioTestCase):
         finally:
             await coord.async_stop()
 
+    async def test_traffic_counters_sent_received_transferred(self) -> None:
+        connects: list[int] = []
+        realms: list[int] = []
+        coord = AsyncP2PProxyCoordinator(
+            {
+                CONF_SERIAL: "TESTSTAT01",
+                CONF_USERNAME: "admin",
+                CONF_PASSWORD: "secret",
+                CONF_APP_PROFILE: "kvmsprolite",
+                CONF_BIND_ADDRESS: "127.0.0.1",
+            }
+        )
+        coord._create_tunnel = lambda: _FakeAsyncTunnel(connects, realms)  # type: ignore[method-assign]
+
+        await coord.async_start()
+        try:
+            self.assertEqual(coord.bytes_sent, 0)
+            self.assertEqual(coord.bytes_received, 0)
+            self.assertEqual(coord.bytes_transferred, 0)
+
+            # Snapshot increments bytes_received
+            snap = await coord.async_get_snapshot(1)
+            self.assertEqual(coord.bytes_received, len(snap))
+            self.assertEqual(coord.bytes_sent, 0)
+            self.assertEqual(coord.bytes_transferred, len(snap))
+
+            # RTSP traffic increments both bytes_sent and bytes_received
+            rr, rw = await asyncio.open_connection("127.0.0.1", coord.actual_rtsp_port)
+            rtsp_req = b"OPTIONS rtsp://127.0.0.1/cam/realmonitor?channel=1&subtype=1 RTSP/1.0\r\nCSeq: 1\r\n\r\n"
+            rw.write(rtsp_req)
+            await rw.drain()
+            rtsp_resp = await rr.read(1024)
+            rw.close()
+            await asyncio.sleep(0.05)
+
+            self.assertEqual(coord.bytes_sent, len(rtsp_req))
+            self.assertEqual(coord.bytes_received, len(snap) + len(rtsp_resp))
+            self.assertEqual(
+                coord.bytes_transferred, coord.bytes_sent + coord.bytes_received
+            )
+        finally:
+            await coord.async_stop()
+
 
 if __name__ == "__main__":
     unittest.main()
